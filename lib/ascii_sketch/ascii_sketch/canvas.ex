@@ -2,6 +2,8 @@ defmodule AsciiSketch.Canvas do
   use Ecto.Schema
   import Ecto.Changeset
 
+  alias AsciiSketch.Canvas.Change
+
   @primary_key {:id, :binary_id, autogenerate: true}
   @foreign_key_type :binary_id
   schema "canvases" do
@@ -21,12 +23,20 @@ defmodule AsciiSketch.Canvas do
     end
   end
 
+  def apply_change(%__MODULE__{lines: lines} = canvas, change) do
+    new_lines = Change.apply(change, lines)
+
+    canvas
+    |> changeset(%{lines: new_lines})
+    |> apply_changes()
+  end
+
   @doc false
   def changeset(canvas \\ %__MODULE__{}, attrs) do
     canvas
     |> cast(attrs, [:canvas, :lines])
     |> maybe_serialize()
-    |> validate_required([:canvas, :lines])
+    |> validate_required([:lines])
   end
 
   defp maybe_serialize(%Ecto.Changeset{valid?: true, changes: %{canvas: _}} = changeset),
