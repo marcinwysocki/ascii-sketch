@@ -7,6 +7,11 @@
 # General application configuration
 import Config
 
+config :ascii_sketch, AsciiSketch.Canvas,
+  width: 5,
+  height: 3,
+  empty_character: ' '
+
 config :ascii_sketch,
   ecto_repos: [AsciiSketch.Repo],
   generators: [binary_id: true]
