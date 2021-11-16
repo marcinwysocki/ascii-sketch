@@ -21,7 +21,7 @@ defmodule AsciiSketch.Test.AsciiSketchTest do
               }} = AsciiSketch.create(width: width, height: height)
     end
 
-    test "creates the canvas in the DB" do
+    test "creates a canvas in the DB" do
       assert {:ok, %Canvas{id: id}} = AsciiSketch.create()
       assert [%Canvas{id: ^id}] = Repo.all(Canvas)
     end

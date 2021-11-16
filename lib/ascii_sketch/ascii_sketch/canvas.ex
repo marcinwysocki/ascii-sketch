@@ -17,7 +17,7 @@ defmodule AsciiSketch.Canvas do
     timestamps()
   end
 
-  def new_changeset(opts) do
+  def new(opts) do
     config =
       :ascii_sketch
       |> Application.get_env(__MODULE__)
@@ -30,24 +30,25 @@ defmodule AsciiSketch.Canvas do
     |> Validations.validate_coordinates(:width)
     |> Validations.validate_character(:empty_character)
     |> make_empty_lines()
-    |> maybe_serialize()
+    |> serialize_lines()
     |> validate_required([:lines, :width, :height])
   end
 
-  def apply_change(%__MODULE__{lines: lines}, change) do
-    Change.apply(change, lines)
+  def apply_change(%__MODULE__{lines: lines} = canvas, change) do
+    new_lines = Change.apply(change, lines)
+
+    canvas
+    |> cast(%{lines: new_lines}, [:lines])
+    |> serialize_lines()
   end
 
-  defp maybe_serialize(%Ecto.Changeset{valid?: true, changes: %{canvas: _}} = changeset),
-    do: changeset
-
-  defp maybe_serialize(%Ecto.Changeset{valid?: true, changes: %{lines: lines}} = changeset) do
+  defp serialize_lines(%Ecto.Changeset{valid?: true, changes: %{lines: lines}} = changeset) do
     canvas = Enum.join(lines, "\n")
 
     put_change(changeset, :canvas, canvas)
   end
 
-  defp maybe_serialize(changeset), do: changeset
+  defp serialize_lines(changeset), do: changeset
 
   defp make_empty_lines(
          %Ecto.Changeset{
