@@ -3,8 +3,9 @@ defmodule AsciiSketch.Test.CanvasTest do
 
   alias AsciiSketch.Canvas
   alias AsciiSketch.Test.Support.Dot
+  alias AsciiSketch.Test.Support.BrokenChange
 
-  describe "new()" do
+  describe "new/1" do
     test "returns a changeset" do
       assert %Ecto.Changeset{} = Canvas.new([])
     end
@@ -58,11 +59,21 @@ defmodule AsciiSketch.Test.CanvasTest do
   end
 
   describe "apply_change/2" do
-    test "applies given change and returns an updated Canvas" do
+    setup do
+      canvas = [] |> Canvas.new() |> Ecto.Changeset.apply_changes()
+
+      {:ok, %{empty: canvas}}
+    end
+
+    test "returns a changeset", %{empty: canvas} do
+      change = %Dot{x: 1, y: 1, character: '@'}
+
+      assert %Ecto.Changeset{} = Canvas.apply_change(canvas, change)
+    end
+
+    test "applies given change and returns an updated Canvas", %{empty: canvas} do
       change_1 = %Dot{x: 3, y: 2, character: '@'}
       change_2 = %Dot{x: 1, y: 0, character: '$'}
-
-      assert %Canvas{} = canvas = [] |> Canvas.new() |> Ecto.Changeset.apply_changes()
 
       assert %Canvas{
                lines: [
@@ -86,6 +97,12 @@ defmodule AsciiSketch.Test.CanvasTest do
                ],
                canvas: "+$+++\n+++++\n+++@+\n+++++\n+++++"
              } = updated |> Canvas.apply_change(change_2) |> Ecto.Changeset.apply_changes()
+    end
+
+    test "returns an invalid changeset if the change returns invalid lines", %{empty: canvas} do
+      change = %BrokenChange{x: 1, y: 1, character: '@'}
+
+      assert %Ecto.Changeset{valid?: false} = Canvas.apply_change(canvas, change)
     end
   end
 end

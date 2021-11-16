@@ -66,4 +66,8 @@ defmodule AsciiSketch.Canvas do
   defp make_empty_line(width, character) do
     Enum.reduce(1..width, '', fn _, acc -> acc ++ character end)
   end
+
+  defimpl String.Chars do
+    def to_string(%AsciiSketch.Canvas{canvas: canvas}), do: canvas
+  end
 end
