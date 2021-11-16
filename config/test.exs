@@ -1,5 +1,10 @@
 import Config
 
+config :ascii_sketch, AsciiSketch.Canvas,
+  width: 5,
+  height: 5,
+  empty_character: '+'
+
 # Configure your database
 #
 # The MIX_TEST_PARTITION environment variable can be used

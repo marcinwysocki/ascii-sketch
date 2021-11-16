@@ -3,40 +3,39 @@ defmodule AsciiSketch.Canvas do
   import Ecto.Changeset
 
   alias AsciiSketch.Canvas.Change
+  alias AsciiSketch.Canvas.Validations
 
   @primary_key {:id, :binary_id, autogenerate: true}
   @foreign_key_type :binary_id
   schema "canvases" do
     field :canvas, :string
+    field :width, :integer
+    field :height, :integer
     field :lines, {:array, {:array, :integer}}, virtual: true
+    field :empty_character, {:array, :integer}, virtual: true
 
     timestamps()
   end
 
-  def new do
-    config = Application.get_env(:ascii_sketch, __MODULE__)
-    lines = make_empty_lines(config[:width], config[:height], config[:empty_character])
+  def new_changeset(opts) do
+    config =
+      :ascii_sketch
+      |> Application.get_env(__MODULE__)
+      |> Keyword.merge(opts)
+      |> Enum.into(%{})
 
-    case changeset(%{lines: lines}) do
-      %Ecto.Changeset{valid?: true} = changes -> apply_changes(changes)
-      %Ecto.Changeset{errors: errors} -> {:error, errors}
-    end
-  end
-
-  def apply_change(%__MODULE__{lines: lines} = canvas, change) do
-    new_lines = Change.apply(change, lines)
-
-    canvas
-    |> changeset(%{lines: new_lines})
-    |> apply_changes()
-  end
-
-  @doc false
-  def changeset(canvas \\ %__MODULE__{}, attrs) do
-    canvas
-    |> cast(attrs, [:canvas, :lines])
+    %__MODULE__{}
+    |> cast(config, [:canvas, :width, :height, :empty_character])
+    |> Validations.validate_coordinates(:height)
+    |> Validations.validate_coordinates(:width)
+    |> Validations.validate_character(:empty_character)
+    |> make_empty_lines()
     |> maybe_serialize()
-    |> validate_required([:lines])
+    |> validate_required([:lines, :width, :height])
+  end
+
+  def apply_change(%__MODULE__{lines: lines}, change) do
+    Change.apply(change, lines)
   end
 
   defp maybe_serialize(%Ecto.Changeset{valid?: true, changes: %{canvas: _}} = changeset),
@@ -50,11 +49,18 @@ defmodule AsciiSketch.Canvas do
 
   defp maybe_serialize(changeset), do: changeset
 
-  defp make_empty_lines(width, height, character) do
-    for _ <- 1..height do
-      make_empty_line(width, character)
-    end
+  defp make_empty_lines(
+         %Ecto.Changeset{
+           valid?: true,
+           changes: %{width: width, height: height, empty_character: character}
+         } = changeset
+       ) do
+    lines = for _ <- 1..height, do: make_empty_line(width, character)
+
+    put_change(changeset, :lines, lines)
   end
+
+  defp make_empty_lines(changeset), do: changeset
 
   defp make_empty_line(width, character) do
     Enum.reduce(1..width, '', fn _, acc -> acc ++ character end)
