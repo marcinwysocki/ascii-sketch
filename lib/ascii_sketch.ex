@@ -12,7 +12,7 @@ defmodule AsciiSketch do
 
   def create(opts \\ []) do
     opts
-    |> Canvas.new_changeset()
+    |> Canvas.new()
     |> Repo.insert()
   end
 

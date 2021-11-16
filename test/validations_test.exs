@@ -28,7 +28,7 @@ defmodule AsciiSketch.Test.ValidationsTest do
     end
 
     test "adds an error if X coordinate exceeds canvas' width", %{types: types, fields: fields} do
-      canvas = Canvas.new_changeset(width: 5, height: 20) |> apply_changes()
+      canvas = Canvas.new(width: 5, height: 20) |> apply_changes()
 
       changeset =
         types
@@ -40,7 +40,7 @@ defmodule AsciiSketch.Test.ValidationsTest do
     end
 
     test "adds an error if Y coordinate exceeds canvas' hight", %{types: types, fields: fields} do
-      canvas = Canvas.new_changeset(width: 20, height: 5) |> apply_changes()
+      canvas = Canvas.new(width: 20, height: 5) |> apply_changes()
 
       changeset =
         types
@@ -52,7 +52,7 @@ defmodule AsciiSketch.Test.ValidationsTest do
     end
 
     test "returns a valid changeset for valid params", %{types: types, fields: fields} do
-      canvas = Canvas.new_changeset(width: 20, height: 20) |> apply_changes()
+      canvas = Canvas.new(width: 20, height: 20) |> apply_changes()
 
       changeset =
         types
