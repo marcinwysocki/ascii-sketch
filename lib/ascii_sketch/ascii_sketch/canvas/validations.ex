@@ -2,7 +2,7 @@ defmodule AsciiSketch.Canvas.Validations do
   import Ecto.Changeset
 
   def validate_coordinates(%Ecto.Changeset{} = changeset, key, opts \\ []) do
-    changeset = validate_number(changeset, key, greater_than: 0)
+    changeset = validate_number(changeset, key, greater_than_or_equal_to: 0)
 
     case opts do
       [] ->

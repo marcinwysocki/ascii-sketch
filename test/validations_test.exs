@@ -14,17 +14,19 @@ defmodule AsciiSketch.Test.ValidationsTest do
       {:ok, %{types: {%{}, types}, fields: Map.keys(types)}}
     end
 
-    test "adds an error if the coordinate is <= 0", %{types: types, fields: fields} do
+    test "adds an error if the coordinate is < 0", %{types: types, fields: fields} do
       changeset =
         types
-        |> cast(%{x: -5, y: 0}, fields)
+        |> cast(%{x: -5, y: -1}, fields)
         |> Validations.validate_coordinates(:x)
         |> Validations.validate_coordinates(:y)
 
       assert %Ecto.Changeset{valid?: false} = changeset
 
-      assert %{x: ["must be greater than 0"], y: ["must be greater than 0"]} =
-               errors_on(changeset)
+      assert %{
+               x: ["must be greater than or equal to 0"],
+               y: ["must be greater than or equal to 0"]
+             } = errors_on(changeset)
     end
 
     test "adds an error if X coordinate exceeds canvas' width", %{types: types, fields: fields} do

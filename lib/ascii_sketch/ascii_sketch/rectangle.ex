@@ -16,17 +16,73 @@ defmodule AsciiSketch.Canvas.Rectangle do
     fill: {:array, :integer},
     outline: {:array, :integer}
   }
-  @required Map.keys(@types)
+  @required Map.keys(@types) -- [:fill, :outline]
 
   def changeset(params, %Canvas{} = canvas) do
-    {%__MODULE__{}, @types}
-    |> cast(params, @required)
-    |> Validations.validate_character(:fill)
-    |> Validations.validate_character(:outline)
+    with rectangle <- base_changeset(@types),
+         fill_and_outline <- validate_fill_and_outline(rectangle, params),
+         dimensions <- validate_dimensions(rectangle, params, canvas) do
+      fill_and_outline
+      |> merge(dimensions)
+      |> validate_required(@required)
+    end
+  end
+
+  defp base_changeset(types) do
+    {%__MODULE__{}, types}
+    |> cast(%{}, [])
+  end
+
+  defp validate_fill_and_outline(changeset, params) do
+    fill = Map.get(params, :fill)
+    outline = Map.get(params, :outline)
+
+    both_missing? = is_nil(fill) and is_nil(outline)
+
+    cast_fields =
+      cond do
+        both_missing? -> [:fill, :outline]
+        is_nil(fill) -> [:outline]
+        is_nil(outline) -> [:fill]
+        true -> [:fill, :outline]
+      end
+
+    changeset
+    |> cast(params, cast_fields)
+    |> add_error_if(both_missing?, :fill, "either fill or outline must be set")
+    |> add_error_if(both_missing?, :outline, "either fill or outline must be set")
+    |> maybe_validate(:fill, &Validations.validate_character/2)
+    |> maybe_validate(:outline, &Validations.validate_character/2)
+  end
+
+  defp validate_dimensions(changeset, params, canvas) do
+    changeset
+    |> cast(params, [:x, :y, :width, :height])
     |> Validations.validate_coordinates(:x, canvas_axis: {:x, canvas})
     |> Validations.validate_coordinates(:y, canvas_axis: {:y, canvas})
-    |> validate_required(@required)
+    |> validate_fits_on_canvas(canvas)
   end
+
+  defp maybe_validate(%Ecto.Changeset{changes: changes} = changeset, key, validator) do
+    case Map.get(changes, key, nil) do
+      nil -> changeset
+      _change -> apply(validator, [changeset, key])
+    end
+  end
+
+  defp validate_fits_on_canvas(
+         %Ecto.Changeset{changes: %{x: x, y: y, width: width, height: height}} = changeset,
+         %Canvas{} = canvas
+       ) do
+    msg = "must fit on the canvas"
+
+    changeset
+    |> add_error_if(x + width > canvas.width, :width, msg)
+    |> add_error_if(y + height > canvas.height, :height, msg)
+  end
+
+  defp add_error_if(changeset, true, key, error), do: add_error(changeset, key, error)
+  defp add_error_if(changeset, false, _, _), do: changeset
 
   defimpl AsciiSketch.Canvas.Change do
     alias AsciiSketch.Canvas.Rectangle
