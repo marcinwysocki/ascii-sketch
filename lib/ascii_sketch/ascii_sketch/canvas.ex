@@ -79,4 +79,16 @@ defmodule AsciiSketch.Canvas do
   defimpl String.Chars do
     def to_string(%AsciiSketch.Canvas{canvas: canvas}), do: canvas
   end
+
+  defimpl Jason.Encoder do
+    def encode(
+          %AsciiSketch.Canvas{} = canvas,
+          opts
+        ) do
+      canvas
+      |> Map.from_struct()
+      |> Map.drop([:__meta__, :lines, :empty_character])
+      |> Jason.Encode.map(opts)
+    end
+  end
 end

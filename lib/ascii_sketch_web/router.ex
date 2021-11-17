@@ -20,8 +20,14 @@ defmodule AsciiSketchWeb.Router do
     get "/", PageController, :index
   end
 
-  # Other scopes may use custom stacks.
-  # scope "/api", AsciiSketchWeb do
-  #   pipe_through :api
-  # end
+  scope "/api/v1", AsciiSketchWeb do
+    pipe_through :api
+
+    post "/canvas", CanvasController, :create
+
+    scope "/canvas/:id" do
+      get "/", CanvasController, :get
+      put "/draw/rectangle", CanvasController, :rectangle
+    end
+  end
 end
