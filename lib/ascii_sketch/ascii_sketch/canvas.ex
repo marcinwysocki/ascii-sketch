@@ -26,8 +26,8 @@ defmodule AsciiSketch.Canvas do
 
     %__MODULE__{}
     |> cast(config, [:canvas, :width, :height, :empty_character])
-    |> Validations.validate_coordinates(:height)
-    |> Validations.validate_coordinates(:width)
+    |> validate_number(:height, greater_than: 0)
+    |> validate_number(:width, greater_than: 0)
     |> Validations.validate_character(:empty_character)
     |> make_empty_lines()
     |> serialize_lines()
@@ -72,8 +72,8 @@ defmodule AsciiSketch.Canvas do
 
   defp make_empty_lines(changeset), do: changeset
 
-  defp make_empty_line(width, character) do
-    Enum.reduce(1..width, '', fn _, acc -> acc ++ character end)
+  defp make_empty_line(width, [character]) do
+    Enum.reduce(1..width, '', fn _, acc -> [character | acc] end)
   end
 
   defimpl String.Chars do
