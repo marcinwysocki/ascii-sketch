@@ -16,15 +16,12 @@ defmodule AsciiSketch.Canvas.Rectangle do
     fill: {:array, :integer},
     outline: {:array, :integer}
   }
-  @required Map.keys(@types) -- [:fill, :outline]
 
   def changeset(params, %Canvas{} = canvas) do
     with rectangle <- base_changeset(@types),
          fill_and_outline <- validate_fill_and_outline(rectangle, params),
          dimensions <- validate_dimensions(rectangle, params, canvas) do
-      fill_and_outline
-      |> merge(dimensions)
-      |> validate_required(@required)
+      merge(fill_and_outline, dimensions)
     end
   end
 
@@ -71,14 +68,20 @@ defmodule AsciiSketch.Canvas.Rectangle do
   end
 
   defp validate_fits_on_canvas(
-         %Ecto.Changeset{changes: %{x: x, y: y, width: width, height: height}} = changeset,
+         %Ecto.Changeset{changes: changes} = changeset,
          %Canvas{} = canvas
        ) do
     msg = "must fit on the canvas"
 
-    changeset
-    |> add_error_if(x + width > canvas.width, :width, msg)
-    |> add_error_if(y + height > canvas.height, :height, msg)
+    changeset = validate_required(changeset, [:x, :y, :height, :width])
+
+    if changeset.valid? do
+      changeset
+      |> add_error_if(changes.x + changes.width > canvas.width, :width, msg)
+      |> add_error_if(changes.y + changes.height > canvas.height, :height, msg)
+    else
+      changeset
+    end
   end
 
   defp add_error_if(changeset, true, key, error), do: add_error(changeset, key, error)
@@ -90,8 +93,6 @@ defmodule AsciiSketch.Canvas.Rectangle do
     def apply(%Rectangle{} = rect, lines) do
       {head, modified} = Enum.split(lines, rect.y)
       {modified, tail} = Enum.split(modified, rect.height)
-
-      {head, modified, tail}
 
       {first_line, rest} = List.pop_at(modified, 0)
       {last_line, body} = List.pop_at(rest, length(rest) - 1)

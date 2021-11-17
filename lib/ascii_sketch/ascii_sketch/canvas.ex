@@ -42,6 +42,15 @@ defmodule AsciiSketch.Canvas do
     |> serialize_lines()
   end
 
+  def deserialize(%__MODULE__{canvas: canvas_string} = canvas) do
+    lines =
+      canvas_string
+      |> String.split("\n")
+      |> Enum.map(&String.to_charlist/1)
+
+    Map.put(canvas, :lines, lines)
+  end
+
   defp serialize_lines(%Ecto.Changeset{valid?: true, changes: %{lines: lines}} = changeset) do
     canvas = Enum.join(lines, "\n")
 
