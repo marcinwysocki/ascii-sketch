@@ -8,7 +8,9 @@ defmodule AsciiSketch do
   """
 
   alias AsciiSketch.Canvas
+  alias AsciiSketch.Canvas.Rectangle
   alias AsciiSketch.Repo
+  alias Ecto.Changeset
 
   def create(opts \\ []) do
     opts
@@ -17,8 +19,32 @@ defmodule AsciiSketch do
   end
 
   def get(id) when is_binary(id) do
-    Repo.get(Canvas, id)
+    case Repo.get(Canvas, id) do
+      nil -> nil
+      canvas -> Canvas.deserialize(canvas)
+    end
   end
 
   def get(_), do: {:error, :id_not_binary}
+
+  @spec draw_rectangle(binary(), map()) ::
+          {:ok, Canvas, map()} | {:error, Changeset, map()} | {:error, term(), map()}
+  def draw_rectangle(canvas_id, rectangle_params) do
+    {time, result} =
+      :timer.tc(fn ->
+        with canvas when not is_nil(canvas) <- get(canvas_id),
+             %Changeset{valid?: true} = rect_changeset <-
+               Rectangle.changeset(rectangle_params, canvas),
+             %Rectangle{} = rectangle <- Changeset.apply_changes(rect_changeset),
+             updated_canvas <- Canvas.apply_change(canvas, rectangle) do
+          Repo.update(updated_canvas, returning: [:updated_at])
+        else
+          nil -> {:error, :canvas_not_found}
+          %Changeset{valid?: false} = changeset -> {:error, changeset}
+          error -> error
+        end
+      end)
+
+    Tuple.append(result, %{time_ms: :erlang.convert_time_unit(time, :microsecond, :millisecond)})
+  end
 end

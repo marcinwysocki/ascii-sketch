@@ -72,9 +72,14 @@ defmodule AsciiSketch.Test.RectangleTest do
 
     test "returns a valid changeset if outline is an invalid character",
          %{canvas: canvas, params: params} do
-      assert %Ecto.Changeset{valid?: false} = Rectangle.changeset(%{params | outline: "+"}, canvas)
-      assert %Ecto.Changeset{valid?: false} = Rectangle.changeset(%{params | outline: 123}, canvas)
-      assert %Ecto.Changeset{valid?: false} = Rectangle.changeset(%{params | outline: [321]}, canvas)
+      assert %Ecto.Changeset{valid?: false} =
+               Rectangle.changeset(%{params | outline: "+"}, canvas)
+
+      assert %Ecto.Changeset{valid?: false} =
+               Rectangle.changeset(%{params | outline: 123}, canvas)
+
+      assert %Ecto.Changeset{valid?: false} =
+               Rectangle.changeset(%{params | outline: [321]}, canvas)
     end
   end
 end
