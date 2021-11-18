@@ -17,7 +17,7 @@ defmodule AsciiSketchWeb.Router do
   scope "/", AsciiSketchWeb do
     pipe_through :browser
 
-    get "/", PageController, :index
+    live "/canvas/:id", CanvasLive.Show, :show
   end
 
   scope "/api/v1", AsciiSketchWeb do
