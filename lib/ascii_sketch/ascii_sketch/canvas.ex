@@ -26,8 +26,8 @@ defmodule AsciiSketch.Canvas do
 
     %__MODULE__{}
     |> cast(config, [:canvas, :width, :height, :empty_character])
-    |> Validations.validate_coordinates(:height)
-    |> Validations.validate_coordinates(:width)
+    |> validate_number(:height, greater_than: 0)
+    |> validate_number(:width, greater_than: 0)
     |> Validations.validate_character(:empty_character)
     |> make_empty_lines()
     |> serialize_lines()
@@ -72,8 +72,24 @@ defmodule AsciiSketch.Canvas do
 
   defp make_empty_lines(changeset), do: changeset
 
-  defp make_empty_line(width, character) do
-    Enum.reduce(1..width, '', fn _, acc -> acc ++ character end)
+  defp make_empty_line(width, [character]) do
+    Enum.reduce(1..width, '', fn _, acc -> [character | acc] end)
+  end
+
+  defimpl String.Chars do
+    def to_string(%AsciiSketch.Canvas{canvas: canvas}), do: canvas
+  end
+
+  defimpl Jason.Encoder do
+    def encode(
+          %AsciiSketch.Canvas{} = canvas,
+          opts
+        ) do
+      canvas
+      |> Map.from_struct()
+      |> Map.drop([:__meta__, :lines, :empty_character])
+      |> Jason.Encode.map(opts)
+    end
   end
 
   defimpl String.Chars do

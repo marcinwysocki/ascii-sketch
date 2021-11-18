@@ -105,4 +105,15 @@ defmodule AsciiSketch.Test.CanvasTest do
       assert %Ecto.Changeset{valid?: false} = Canvas.apply_change(canvas, change)
     end
   end
+
+  describe "deserialize/1" do
+    test "populates :lines based on :canvas' content" do
+      canvas = Ecto.Changeset.apply_changes(Canvas.new(width: 2, height: 2, empty_character: '+'))
+      no_lines = Map.put(canvas, :lines, nil)
+
+      assert %Canvas{lines: ['++', '++'] = lines, canvas: "++\n++" = canvas_str} = canvas
+      assert %Canvas{lines: nil, canvas: ^canvas_str} = no_lines
+      assert %Canvas{lines: ^lines, canvas: ^canvas_str} = Canvas.deserialize(no_lines)
+    end
+  end
 end
