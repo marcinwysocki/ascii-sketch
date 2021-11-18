@@ -234,7 +234,9 @@ defmodule AsciiSketch.Test.AsciiSketchTest do
 
     test "fills the canvas in all directions from the start point until a different character or the border is reached ",
          %{canvas_id: id} do
-      fill = %{x: 0, y: 0, character: '-'}
+      fill_1 = %{x: 0, y: 0, character: '-'}
+      fill_2 = %{x: 2, y: 5, character: '*'}
+
       rect_1 = %{x: 0, y: 3, width: 8, height: 4, outline: 'O'}
       rect_2 = %{x: 5, y: 5, width: 5, height: 3, fill: 'X', outline: 'X'}
       rect_3 = %{x: 14, y: 0, width: 7, height: 6, fill: '.'}
@@ -262,16 +264,30 @@ defmodule AsciiSketch.Test.AsciiSketchTest do
       assert {:ok,
               %Canvas{
                 lines: [
-                  '@@@@@@@@@@@@@@@@@@@@@',
-                  '@@@@@@@@@@@@@@@@@@@@@',
-                  '@@@@@@@@@@@@@@@@@@@@@',
-                  '@@@@@@@@@@@@@@@@@@@@@',
-                  '@@@@@@@@@@@@@@@@@@@@@',
-                  '@@@@@@@@@@@@@@@@@@@@@',
-                  '@@@@@@@@@@@@@@@@@@@@@',
-                  '@@@@@@@@@@@@@@@@@@@@@'
+                  '--------------.......',
+                  '--------------.......',
+                  '--------------.......',
+                  'OOOOOOOO------.......',
+                  'O++++++O------.......',
+                  'O++++XXXXX----.......',
+                  'OOOOOXXXXX-----------',
+                  '+++++XXXXX-----------'
                 ]
-              }, _meta} = AsciiSketch.draw(id, FloodFill, fill)
+              }, _meta} = AsciiSketch.draw(id, FloodFill, fill_1)
+
+      assert {:ok,
+              %Canvas{
+                lines: [
+                  '--------------.......',
+                  '--------------.......',
+                  '--------------.......',
+                  'OOOOOOOO------.......',
+                  'O******O------.......',
+                  'O****XXXXX----.......',
+                  'OOOOOXXXXX-----------',
+                  '+++++XXXXX-----------'
+                ]
+              }, _meta} = AsciiSketch.draw(id, FloodFill, fill_2)
     end
   end
 end

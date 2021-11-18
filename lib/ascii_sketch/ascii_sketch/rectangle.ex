@@ -74,6 +74,7 @@ defmodule AsciiSketch.Canvas.Rectangle do
   defp maybe_set_outline(changeset, fill, nil) when not is_nil(fill) do
     put_change(changeset, :outline, fill)
   end
+
   defp maybe_set_outline(changeset, _, _), do: changeset
 
   defp validate_fits_on_canvas(
