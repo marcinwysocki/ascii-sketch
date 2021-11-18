@@ -2,6 +2,7 @@ defmodule AsciiSketch.Test.AsciiSketchTest do
   use AsciiSketch.DataCase
 
   alias AsciiSketch.Canvas
+  alias AsciiSketch.Canvas.Rectangle
   alias AsciiSketch.Repo
 
   describe "create/1" do
@@ -48,7 +49,7 @@ defmodule AsciiSketch.Test.AsciiSketchTest do
     end
   end
 
-  describe "draw_rectangle/2" do
+  describe "drawing a rectangle" do
     setup do
       {:ok, %Canvas{id: id}} = AsciiSketch.create(width: 30, height: 10, empty_character: '+')
 
@@ -57,24 +58,24 @@ defmodule AsciiSketch.Test.AsciiSketchTest do
 
     test "returns an error if canvas doesn't exist" do
       assert {:error, :canvas_not_found, _meta} =
-               AsciiSketch.draw_rectangle(Ecto.UUID.generate(), %{})
+               AsciiSketch.draw(Ecto.UUID.generate(), Rectangle, %{})
     end
 
     test "returns an error if rectangle change isn't correct", %{canvas_id: id} do
       assert {:error, %Ecto.Changeset{}, _meta} =
-               AsciiSketch.draw_rectangle(id, %{x: -1, y: 3000})
+               AsciiSketch.draw(id, Rectangle, %{x: -1, y: 3000})
     end
 
     test "returns operation time in milliseconds", %{canvas_id: id} do
       rectangle = %{x: 3, y: 2, width: 5, height: 3, fill: 'X', outline: '@'}
 
-      assert {:ok, _, %{time_ms: _}} = AsciiSketch.draw_rectangle(id, rectangle)
+      assert {:ok, _, %{time_ms: _}} = AsciiSketch.draw(id, Rectangle, rectangle)
     end
 
     test "draws a rectangle on a an empty canvas", %{canvas_id: id} do
       rectangle = %{x: 3, y: 2, width: 5, height: 3, fill: 'X', outline: '@'}
 
-      assert {:ok, updated, _meta} = AsciiSketch.draw_rectangle(id, rectangle)
+      assert {:ok, updated, _meta} = AsciiSketch.draw(id, Rectangle, rectangle)
 
       assert %Canvas{
                lines: [
@@ -97,7 +98,7 @@ defmodule AsciiSketch.Test.AsciiSketchTest do
       rectangle_2 = %{x: 10, y: 3, width: 14, height: 6, fill: 'O', outline: 'X'}
 
       assert {:ok, %Canvas{id: id_2} = first_rect, _meta} =
-               AsciiSketch.draw_rectangle(id_1, rectangle_1)
+               AsciiSketch.draw(id_1, Rectangle, rectangle_1)
 
       assert %Canvas{
                lines: [
@@ -114,7 +115,7 @@ defmodule AsciiSketch.Test.AsciiSketchTest do
                ]
              } = first_rect
 
-      assert {:ok, second_rect, _meta} = AsciiSketch.draw_rectangle(id_2, rectangle_2)
+      assert {:ok, second_rect, _meta} = AsciiSketch.draw(id_2, Rectangle, rectangle_2)
 
       assert %Canvas{
                lines: [
@@ -137,7 +138,7 @@ defmodule AsciiSketch.Test.AsciiSketchTest do
       rectangle_2 = %{x: 5, y: 5, width: 5, height: 3, fill: 'X', outline: 'X'}
 
       assert {:ok, %Canvas{id: id_2} = first_rect, _meta} =
-               AsciiSketch.draw_rectangle(id_1, rectangle_1)
+               AsciiSketch.draw(id_1, Rectangle, rectangle_1)
 
       assert %Canvas{
                lines: [
@@ -154,7 +155,7 @@ defmodule AsciiSketch.Test.AsciiSketchTest do
                ]
              } = first_rect
 
-      assert {:ok, second_rect, _meta} = AsciiSketch.draw_rectangle(id_2, rectangle_2)
+      assert {:ok, second_rect, _meta} = AsciiSketch.draw(id_2, Rectangle, rectangle_2)
 
       assert %Canvas{
                lines: [
@@ -175,7 +176,7 @@ defmodule AsciiSketch.Test.AsciiSketchTest do
     test "updates the canvas in the DB", %{canvas_id: id} do
       rectangle = %{x: 3, y: 2, width: 5, height: 3, fill: 'X', outline: '@'}
 
-      assert {:ok, _, _meta} = AsciiSketch.draw_rectangle(id, rectangle)
+      assert {:ok, _, _meta} = AsciiSketch.draw(id, Rectangle, rectangle)
 
       assert %Canvas{
                lines: [

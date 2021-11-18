@@ -8,13 +8,12 @@ defmodule AsciiSketch do
   """
 
   alias AsciiSketch.Canvas
-  alias AsciiSketch.Canvas.Rectangle
+  alias AsciiSketch.Canvas.Change
   alias AsciiSketch.Repo
   alias Ecto.Changeset
 
   def create(opts \\ []) do
     opts
-    |> characters_to_charlist(:empty_character)
     |> Canvas.new()
     |> Repo.insert()
   end
@@ -28,20 +27,14 @@ defmodule AsciiSketch do
 
   def get(_), do: {:error, :id_not_binary}
 
-  @spec draw_rectangle(binary(), map()) ::
-          {:ok, Canvas, map()} | {:error, Changeset, map()} | {:error, term(), map()}
-  def draw_rectangle(canvas_id, rectangle_params) do
-    params =
-      rectangle_params
-      |> characters_to_charlist(:fill)
-      |> characters_to_charlist(:outline)
-
+  def draw(canvas_id, change_validator, params) do
     {time, result} =
       :timer.tc(fn ->
         with canvas when not is_nil(canvas) <- get(canvas_id),
-             %Changeset{valid?: true} = rect_changeset <- Rectangle.changeset(params, canvas),
-             %Rectangle{} = rectangle <- Changeset.apply_changes(rect_changeset),
-             updated_canvas <- Canvas.apply_change(canvas, rectangle) do
+             %Changeset{valid?: true} = changeset <-
+               Change.Validator.changeset(change_validator, params, canvas),
+             change <- Changeset.apply_changes(changeset),
+             updated_canvas <- Canvas.apply_change(canvas, change) do
           Repo.update(updated_canvas, returning: [:updated_at])
         else
           nil -> {:error, :canvas_not_found}
@@ -51,12 +44,5 @@ defmodule AsciiSketch do
       end)
 
     Tuple.append(result, %{time_ms: :erlang.convert_time_unit(time, :microsecond, :millisecond)})
-  end
-
-  defp characters_to_charlist(params, key) do
-    case get_in(params, [key]) do
-      char when is_binary(char) -> put_in(params, [key], String.to_charlist(char))
-      _ -> params
-    end
   end
 end

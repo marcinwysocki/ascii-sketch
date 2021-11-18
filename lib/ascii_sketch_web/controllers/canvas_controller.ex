@@ -40,7 +40,7 @@ defmodule AsciiSketchWeb.CanvasController do
     {canvas_id, params} = Map.pop(params, "id")
     params = prepare_rectangle_params(params)
 
-    case AsciiSketch.draw_rectangle(canvas_id, params) do
+    case AsciiSketch.draw(canvas_id, Canvas.Rectangle, params) do
       {:ok, canvas, meta} ->
         conn
         |> put_status(200)
@@ -66,7 +66,9 @@ defmodule AsciiSketchWeb.CanvasController do
   defp prepare_create_params(params) do
     keys = ["width", "height", "empty_character"]
 
-    known_keys_to_existsing_atoms(params, keys)
+    params
+    |> known_keys_to_existsing_atoms(keys)
+    |> characters_to_charlist(:empty_character)
   end
 
   def prepare_rectangle_params(params) do
@@ -74,6 +76,8 @@ defmodule AsciiSketchWeb.CanvasController do
 
     params
     |> known_keys_to_existsing_atoms(keys)
+    |> characters_to_charlist(:fill)
+    |> characters_to_charlist(:outline)
     |> Enum.into(%{})
   end
 
@@ -82,5 +86,12 @@ defmodule AsciiSketchWeb.CanvasController do
     |> Map.keys()
     |> Enum.filter(&(&1 in keys))
     |> Enum.map(&{String.to_existing_atom(&1), Map.get(params, &1)})
+  end
+
+  defp characters_to_charlist(params, key) do
+    case get_in(params, [key]) do
+      char when is_binary(char) -> put_in(params, [key], String.to_charlist(char))
+      _ -> params
+    end
   end
 end

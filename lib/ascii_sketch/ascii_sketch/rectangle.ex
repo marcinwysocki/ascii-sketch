@@ -6,6 +6,8 @@ defmodule AsciiSketch.Canvas.Rectangle do
   alias AsciiSketch.Canvas
   alias AsciiSketch.Canvas.Validations
 
+  @behaviour Canvas.Change.Validator
+
   defstruct [:x, :y, :width, :height, :fill, :outline]
 
   @types %{
@@ -17,6 +19,7 @@ defmodule AsciiSketch.Canvas.Rectangle do
     outline: {:array, :integer}
   }
 
+  @impl true
   def changeset(params, %Canvas{} = canvas) do
     with rectangle <- base_changeset(@types),
          fill_and_outline <- validate_fill_and_outline(rectangle, params),
