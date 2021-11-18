@@ -49,6 +49,7 @@ defmodule AsciiSketch.Canvas.Rectangle do
 
     changeset
     |> cast(params, cast_fields)
+    |> maybe_set_outline(fill, outline)
     |> add_error_if(both_missing?, :fill, "either fill or outline must be set")
     |> add_error_if(both_missing?, :outline, "either fill or outline must be set")
     |> maybe_validate(:fill, &Validations.validate_character/2)
@@ -69,6 +70,11 @@ defmodule AsciiSketch.Canvas.Rectangle do
       _change -> apply(validator, [changeset, key])
     end
   end
+
+  defp maybe_set_outline(changeset, fill, nil) when not is_nil(fill) do
+    put_change(changeset, :outline, fill)
+  end
+  defp maybe_set_outline(changeset, _, _), do: changeset
 
   defp validate_fits_on_canvas(
          %Ecto.Changeset{changes: changes} = changeset,

@@ -3,6 +3,7 @@ defmodule AsciiSketch.Test.AsciiSketchTest do
 
   alias AsciiSketch.Canvas
   alias AsciiSketch.Canvas.Rectangle
+  alias AsciiSketch.Canvas.FloodFill
   alias AsciiSketch.Repo
 
   describe "create/1" do
@@ -49,7 +50,7 @@ defmodule AsciiSketch.Test.AsciiSketchTest do
     end
   end
 
-  describe "drawing a rectangle" do
+  describe "draw/3" do
     setup do
       {:ok, %Canvas{id: id}} = AsciiSketch.create(width: 30, height: 10, empty_character: '+')
 
@@ -61,7 +62,10 @@ defmodule AsciiSketch.Test.AsciiSketchTest do
                AsciiSketch.draw(Ecto.UUID.generate(), Rectangle, %{})
     end
 
-    test "returns an error if rectangle change isn't correct", %{canvas_id: id} do
+    test "returns an error if change isn't correct", %{canvas_id: id} do
+      assert {:error, %Ecto.Changeset{}, _meta} =
+               AsciiSketch.draw(id, FloodFill, %{x: -1, y: 3000})
+
       assert {:error, %Ecto.Changeset{}, _meta} =
                AsciiSketch.draw(id, Rectangle, %{x: -1, y: 3000})
     end
@@ -70,6 +74,35 @@ defmodule AsciiSketch.Test.AsciiSketchTest do
       rectangle = %{x: 3, y: 2, width: 5, height: 3, fill: 'X', outline: '@'}
 
       assert {:ok, _, %{time_ms: _}} = AsciiSketch.draw(id, Rectangle, rectangle)
+    end
+
+    test "updates the canvas in the DB", %{canvas_id: id} do
+      rectangle = %{x: 3, y: 2, width: 5, height: 3, fill: 'X', outline: '@'}
+
+      assert {:ok, _, _meta} = AsciiSketch.draw(id, Rectangle, rectangle)
+
+      assert %Canvas{
+               lines: [
+                 '++++++++++++++++++++++++++++++',
+                 '++++++++++++++++++++++++++++++',
+                 '+++@@@@@++++++++++++++++++++++',
+                 '+++@XXX@++++++++++++++++++++++',
+                 '+++@@@@@++++++++++++++++++++++',
+                 '++++++++++++++++++++++++++++++',
+                 '++++++++++++++++++++++++++++++',
+                 '++++++++++++++++++++++++++++++',
+                 '++++++++++++++++++++++++++++++',
+                 '++++++++++++++++++++++++++++++'
+               ]
+             } = Canvas |> Repo.get_by!(id: id) |> Canvas.deserialize()
+    end
+  end
+
+  describe "drawing a rectangle" do
+    setup do
+      {:ok, %Canvas{id: id}} = AsciiSketch.create(width: 30, height: 10, empty_character: '+')
+
+      {:ok, %{canvas_id: id}}
     end
 
     test "draws a rectangle on a an empty canvas", %{canvas_id: id} do
@@ -135,7 +168,7 @@ defmodule AsciiSketch.Test.AsciiSketchTest do
 
     test "draws a rectangles over previous drawings", %{canvas_id: id_1} do
       rectangle_1 = %{x: 0, y: 3, width: 8, height: 4, outline: 'O'}
-      rectangle_2 = %{x: 5, y: 5, width: 5, height: 3, fill: 'X', outline: 'X'}
+      rectangle_2 = %{x: 5, y: 5, width: 5, height: 3, fill: 'X'}
 
       assert {:ok, %Canvas{id: id_2} = first_rect, _meta} =
                AsciiSketch.draw(id_1, Rectangle, rectangle_1)
@@ -172,26 +205,73 @@ defmodule AsciiSketch.Test.AsciiSketchTest do
                ]
              } = second_rect
     end
+  end
 
-    test "updates the canvas in the DB", %{canvas_id: id} do
-      rectangle = %{x: 3, y: 2, width: 5, height: 3, fill: 'X', outline: '@'}
+  describe "drawing a flood fill" do
+    setup do
+      {:ok, %Canvas{id: id}} = AsciiSketch.create(width: 21, height: 8, empty_character: '+')
 
-      assert {:ok, _, _meta} = AsciiSketch.draw(id, Rectangle, rectangle)
+      {:ok, %{canvas_id: id}}
+    end
 
-      assert %Canvas{
-               lines: [
-                 '++++++++++++++++++++++++++++++',
-                 '++++++++++++++++++++++++++++++',
-                 '+++@@@@@++++++++++++++++++++++',
-                 '+++@XXX@++++++++++++++++++++++',
-                 '+++@@@@@++++++++++++++++++++++',
-                 '++++++++++++++++++++++++++++++',
-                 '++++++++++++++++++++++++++++++',
-                 '++++++++++++++++++++++++++++++',
-                 '++++++++++++++++++++++++++++++',
-                 '++++++++++++++++++++++++++++++'
-               ]
-             } = Canvas |> Repo.get_by!(id: id) |> Canvas.deserialize()
+    test "fills an empty canvas", %{canvas_id: id} do
+      fill = %{x: 10, y: 5, character: '@'}
+
+      assert {:ok,
+              %Canvas{
+                lines: [
+                  '@@@@@@@@@@@@@@@@@@@@@',
+                  '@@@@@@@@@@@@@@@@@@@@@',
+                  '@@@@@@@@@@@@@@@@@@@@@',
+                  '@@@@@@@@@@@@@@@@@@@@@',
+                  '@@@@@@@@@@@@@@@@@@@@@',
+                  '@@@@@@@@@@@@@@@@@@@@@',
+                  '@@@@@@@@@@@@@@@@@@@@@',
+                  '@@@@@@@@@@@@@@@@@@@@@'
+                ]
+              }, _meta} = AsciiSketch.draw(id, FloodFill, fill)
+    end
+
+    test "fills the canvas in all directions from the start point until a different character or the border is reached ",
+         %{canvas_id: id} do
+      fill = %{x: 0, y: 0, character: '-'}
+      rect_1 = %{x: 0, y: 3, width: 8, height: 4, outline: 'O'}
+      rect_2 = %{x: 5, y: 5, width: 5, height: 3, fill: 'X', outline: 'X'}
+      rect_3 = %{x: 14, y: 0, width: 7, height: 6, fill: '.'}
+
+      assert canvas = AsciiSketch.get(id)
+
+      assert {:ok, with_changes, _} =
+               [rect_1, rect_2, rect_3]
+               |> Enum.reduce({:ok, canvas, %{}}, fn
+                 rect, {:ok, canvas, _} -> AsciiSketch.draw(canvas.id, Rectangle, rect)
+                 _, err -> err
+               end)
+
+      assert [
+               '++++++++++++++.......',
+               '++++++++++++++.......',
+               '++++++++++++++.......',
+               'OOOOOOOO++++++.......',
+               'O++++++O++++++.......',
+               'O++++XXXXX++++.......',
+               'OOOOOXXXXX+++++++++++',
+               '+++++XXXXX+++++++++++'
+             ] = with_changes.lines
+
+      assert {:ok,
+              %Canvas{
+                lines: [
+                  '@@@@@@@@@@@@@@@@@@@@@',
+                  '@@@@@@@@@@@@@@@@@@@@@',
+                  '@@@@@@@@@@@@@@@@@@@@@',
+                  '@@@@@@@@@@@@@@@@@@@@@',
+                  '@@@@@@@@@@@@@@@@@@@@@',
+                  '@@@@@@@@@@@@@@@@@@@@@',
+                  '@@@@@@@@@@@@@@@@@@@@@',
+                  '@@@@@@@@@@@@@@@@@@@@@'
+                ]
+              }, _meta} = AsciiSketch.draw(id, FloodFill, fill)
     end
   end
 end

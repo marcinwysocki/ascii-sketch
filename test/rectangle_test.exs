@@ -63,6 +63,12 @@ defmodule AsciiSketch.Test.RectangleTest do
                Rectangle.changeset(Map.drop(params, [:outline]), canvas)
     end
 
+    test "sets outline = fill if only fill is set",
+         %{canvas: canvas, params: %{fill: fill} = params} do
+      assert %Ecto.Changeset{valid?: true, changes: %{fill: ^fill, outline: ^fill}} =
+               Rectangle.changeset(Map.drop(params, [:outline]), canvas)
+    end
+
     test "returns a valid changeset if fill is an invalid character",
          %{canvas: canvas, params: params} do
       assert %Ecto.Changeset{valid?: false} = Rectangle.changeset(%{params | fill: "+"}, canvas)
