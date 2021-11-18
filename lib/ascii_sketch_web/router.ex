@@ -27,7 +27,7 @@ defmodule AsciiSketchWeb.Router do
 
     scope "/canvas/:id" do
       get "/", CanvasController, :get
-      put "/draw/rectangle", CanvasController, :rectangle
+      put "/draw", CanvasController, :draw
     end
   end
 end

@@ -8,7 +8,7 @@ defmodule AsciiSketchWeb.CanvasController do
       {:ok, canvas} ->
         conn
         |> put_status(201)
-        |> json(canvas)
+        |> json(%{id: canvas.id})
 
       {:error, %Ecto.Changeset{} = changeset} ->
         conn
@@ -36,30 +36,36 @@ defmodule AsciiSketchWeb.CanvasController do
     end
   end
 
-  def rectangle(conn, params) do
-    {canvas_id, params} = Map.pop(params, "id")
-    params = prepare_rectangle_params(params)
+  def draw(conn, params) do
+    with {canvas_id, params} <- Map.pop(params, "id"),
+         {change, params} <- Map.pop(params, "change"),
+         {:ok, mod, params} <- prepare_change(change, params) do
+      case AsciiSketch.draw(canvas_id, mod, params) do
+        {:ok, _canvas, meta} ->
+          conn
+          |> put_status(200)
+          |> json(%{meta: meta})
 
-    case AsciiSketch.draw(canvas_id, Canvas.Rectangle, params) do
-      {:ok, canvas, meta} ->
-        conn
-        |> put_status(200)
-        |> json(%{canvas: canvas, meta: meta})
+        {:error, %Ecto.Changeset{} = changeset, _} ->
+          conn
+          |> put_status(400)
+          |> render("400.json", %{changeset: changeset})
 
-      {:error, %Ecto.Changeset{} = changeset, _} ->
+        {:error, :canvas_not_found, _} ->
+          conn
+          |> put_status(404)
+          |> render("404.json")
+
+        {:error, error, _} ->
+          conn
+          |> put_status(500)
+          |> json(%{errors: %{detail: "#{inspect(error)}"}})
+      end
+    else
+      {:error, msg} ->
         conn
         |> put_status(400)
-        |> render("400.json", %{changeset: changeset})
-
-      {:error, :canvas_not_found, _} ->
-        conn
-        |> put_status(404)
-        |> render("404.json")
-
-      {:error, error, _} ->
-        conn
-        |> put_status(500)
-        |> json(%{errors: %{detail: "#{inspect(error)}"}})
+        |> json(%{errors: %{details: msg}})
     end
   end
 
@@ -71,13 +77,32 @@ defmodule AsciiSketchWeb.CanvasController do
     |> characters_to_charlist(:empty_character)
   end
 
-  def prepare_rectangle_params(params) do
+  defp prepare_change("rectangle", params) do
+    {:ok, Canvas.Rectangle, prepare_rectangle_params(params)}
+  end
+
+  defp prepare_change("flood_fill", params) do
+    {:ok, Canvas.FloodFill, prepare_fill_params(params)}
+  end
+
+  defp prepare_change(_, _), do: {:error, "unsupported change"}
+
+  defp prepare_rectangle_params(params) do
     keys = ["width", "height", "x", "y", "fill", "outline"]
 
     params
     |> known_keys_to_existsing_atoms(keys)
     |> characters_to_charlist(:fill)
     |> characters_to_charlist(:outline)
+    |> Enum.into(%{})
+  end
+
+  defp prepare_fill_params(params) do
+    keys = ["x", "y", "character"]
+
+    params
+    |> known_keys_to_existsing_atoms(keys)
+    |> characters_to_charlist(:character)
     |> Enum.into(%{})
   end
 
