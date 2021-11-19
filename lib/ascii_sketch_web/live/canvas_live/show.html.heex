@@ -3,3 +3,7 @@
 <pre>
 <%= raw(String.replace(@canvas.canvas, "\n", "&#10;")) %>
 </pre>
+
+<%= if @meta do %>
+  <p>Drawing applied in: <%= @meta.time_ms %> ms</p>
+<%  end %>

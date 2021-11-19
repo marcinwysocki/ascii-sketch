@@ -43,6 +43,20 @@ defmodule AsciiSketch do
         end
       end)
 
-    Tuple.append(result, %{time_ms: :erlang.convert_time_unit(time, :microsecond, :millisecond)})
+    result
+    |> Tuple.append(%{time_ms: :erlang.convert_time_unit(time, :microsecond, :millisecond)})
+    |> maybe_broadcast_event()
   end
+
+  defp maybe_broadcast_event({:ok, canvas, meta} = result) do
+    Phoenix.PubSub.broadcast(
+      AsciiSketch.PubSub,
+      "canvas:#{canvas.id}",
+      {:drawing_applied, %{canvas: canvas, meta: meta}}
+    )
+
+    result
+  end
+
+  defp maybe_broadcast_event(result), do: result
 end
