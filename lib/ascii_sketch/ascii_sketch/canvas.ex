@@ -91,8 +91,4 @@ defmodule AsciiSketch.Canvas do
       |> Jason.Encode.map(opts)
     end
   end
-
-  defimpl String.Chars do
-    def to_string(%AsciiSketch.Canvas{canvas: canvas}), do: canvas
-  end
 end
