@@ -39,7 +39,7 @@ defmodule AsciiSketch.Canvas do
 
     canvas
     |> cast(%{lines: new_lines}, [:lines])
-    # |> serialize_lines()
+    |> serialize_lines()
   end
 
   def deserialize(%__MODULE__{canvas: canvas_string} = canvas) do
