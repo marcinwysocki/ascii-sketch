@@ -12,12 +12,23 @@ defmodule AsciiSketch do
   alias AsciiSketch.Repo
   alias Ecto.Changeset
 
+  @doc """
+  Creates an empty canvas.
+
+  It's possible to override the default `width`, `height` and `empty_character`
+  by passing them through `opts`. Values from config will be used otherwise.
+  """
+  @spec create(opts :: keyword()) :: {:ok, %Canvas{}} | {:error, %Ecto.Changeset{}}
   def create(opts \\ []) do
     opts
     |> Canvas.new()
     |> Repo.insert()
   end
 
+  @doc """
+  Returns a canvas by id
+  """
+  @spec get(id :: String.t()) :: nil | {:error, :id_not_binary} | %Canvas{}
   def get(id) when is_binary(id) do
     case Repo.get(Canvas, id) do
       nil -> nil
@@ -27,6 +38,18 @@ defmodule AsciiSketch do
 
   def get(_), do: {:error, :id_not_binary}
 
+  @doc """
+  Adds a drawing to the canvas.
+
+  `change_validator` must be a change module implementing both `AsciiSketch.Canvas.Change.Validator` behaviour
+  and `AsciiSketch.Canvas.Change` protocol.
+
+  `params` must conform to `change_validator` module's structure and validations.
+
+  In case of success, a `:drawing_applied` event will be broadcasted to a `canvas:<canvas_id>` topic.
+  """
+  @spec draw(canvas_id :: String.t(), change_validator :: module(), params :: %{atom() => any()}) ::
+          {:ok, %Canvas{}, %{time_ms: pos_integer()}} | {:error, any(), %{time_ms: pos_integer()}}
   def draw(canvas_id, change_validator, params) do
     {time, result} =
       :timer.tc(fn ->
