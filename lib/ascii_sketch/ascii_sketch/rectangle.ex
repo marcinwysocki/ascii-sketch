@@ -8,6 +8,15 @@ defmodule AsciiSketch.Canvas.Rectangle do
 
   @behaviour Canvas.Change.Validator
 
+  @type t :: %{
+          required(:x) => non_neg_integer(),
+          required(:y) => non_neg_integer(),
+          required(:width) => pos_integer(),
+          required(:height) => pos_integer(),
+          optional(:fill) => nonempty_charlist(),
+          optional(:outline) => nonempty_charlist()
+        }
+
   defstruct [:x, :y, :width, :height, :fill, :outline]
 
   @types %{

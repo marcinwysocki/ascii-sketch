@@ -8,6 +8,12 @@ defmodule AsciiSketch.Canvas.FloodFill do
 
   @behaviour Canvas.Change.Validator
 
+  @type t :: %{
+          required(:x) => non_neg_integer(),
+          required(:y) => non_neg_integer(),
+          required(:character) => nonempty_charlist()
+        }
+
   defstruct [:x, :y, :character]
 
   @types %{
