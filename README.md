@@ -21,7 +21,7 @@ docker-compose up -d
 
 ## Usage
 ### Client
-A simple read-only client is available at http://localhost:4000/canvas/:canvas_id
+A simple read-only client is available at http://localhost:4000/canvas/<:canvas_id>
 
 ### API
 
@@ -135,9 +135,6 @@ All params are required. Response:
 Due to time constraints there are some areas, that need improvements:
   * **tests** - there aren't any for the REST API and client
   * **web side of the project** - in general both the REST API and client are quite raw. If this application was to be developed further, these part could be improved by i.e. extracting some common helpers, creating fallback views etc.
-  * **performance** - it's fine for small canvases, but the bigger they get, the more performance suffers. There are a few of reasons for it, that I can see:
-    * the decision to serialize the canvas and store it as a `text`. This actually seems to be the most problematic part
-    * all the operations are run on a single thread. This could be optimised on a per-change basis
-    * list of lists as a data structure of choice for the implementation. The problem with that is I ended up copying the lists a lot, especially in the `Rectangle` implementation.
+  * **performance** - it's fine for small canvases, but the bigger they get, the more performance suffers. For example: flood fill takes around 80ms on an empty 130x80 canvas, 200ms on a 150x150 canvas and around 7 seconds on a 500x500 one. If there was a requirement to handle bigger canvases, this issue would have to be addressed by implementing more efficient algorithms and potentially different data structures.
     
-    If there was a requirement to handle let's say 2000x1000 canvases, botha algorithms and data structures would have to be revisited.
+    
